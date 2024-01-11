@@ -1,53 +1,57 @@
-from flask import Flask, render_template, request
-from werkzeug.utils import secure_filename
 import os
-import csv
-from collections import Counter
-app = Flask(__name__)
-app.secret_key = "secret_key"
-app.config["UPLOAD_FOLDER"] = "uploads"
-def start_csv_sort(file_path):
-    data = []
-    with open(file_path, "r") as csvfile:
-        reader = csv.reader(csvfile, delimiter=";")
-        for row in reader:
-            director = row[6].strip()
-            if director == "Lelouch, Claude":
-                data.append(row)
-    return data
-@app.route("/", methods=["GET", "POST"])
-def index():
-    data = []
-    success_message = None
-    error_message = None
-    chart_data = None
-    if request.method == "POST":
-        file = request.files["file"]
-        if file and file.filename.endswith(".csv"):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            data = process_csv(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            success_message = "File uploaded successfully!"
-            years = [row[0] for row in data]
-            count_by_year = dict(Counter(years))
-            chart_data = {
-                "labels": list(count_by_year.keys()),
-                "data": list(count_by_year.values())
-            }
-        else:
-            error_message = "Invalid file format! Please upload the CSV file."
-    example_data = [
-        ["1979","122","Cuba","","","Adams, Brooke", ""],
-        ["1978","94","Days of Heaven","","","Adams, Brooke", ""],
-        ["1983","140","Octopussy","","","Adams, Maud",""],
-    ]
-    example_chart_data = {
-        "labels": ["1978", "1979", "1983"],
-        "data": [1, 1, 1]
-    }
-    if not data:
-        data = example_data
-        chart_data = example_chart_data
-    return render_template("index.html", data=data, success_message=success_message, error_message=error_message, chart_data=chart_data)
-if __name__ == "__main__":
-    app.run()
+
+from flask import Flask, request, render_template
+from werkzeug.utils import secure_filename
+from datetime import datetime
+import pygal
+
+ALLOWED_EXTENTIONS = set(['csv'])
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENTIONS
+
+
+def create_app():
+    app = Flask(__name__)
+
+    @app.route('/', methods=['GET', 'POST'])
+    def index():
+        if request.method == 'POST':
+            file = request.files['file']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                new_filename = f'{filename.split(".")[0]}_{str(datetime.now().year)}.csv'
+                save_location = os.path.join('input', new_filename)
+                file.save(save_location)
+
+                lines = open('input/' + new_filename, 'r').readlines()
+                year_title = list()
+                for i in lines:
+                    x = i.strip().split(';')
+                    if (x[6] == 'Lelouch, Claude'):
+                        year_title.append(x[0] + ',' + x[2])
+
+                if (len(year_title) == 0):
+                    return render_template('index.html') + '''
+                        <h2 style="color: brown">ERROR</h2> '''
+                    print(1)
+                else:
+                    chart = pygal.Pie(half_pie=True)
+                    pie_chart = pygal.Pie()
+                    pie_chart.title = 'Browser usage in February 2012 (in %)'
+                    for y in year_title:
+                        data = y.strip().split(',')
+                        pie_chart.add(data[1], int(data[0]))
+
+                    # for y in year_title:
+                    #     data = y.strip().split(',')
+                    #     chart.add(data[1], int(data[0]))
+
+                    chart = pie_chart.render_data_uri()
+                    return render_template('index.html', chart=chart)
+
+        return render_template('index.html')
+
+    return app
