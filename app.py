@@ -1,57 +1,71 @@
+from flask import Flask, render_template, request, redirect, url_for
+import csv
 import os
+#created by Dmytro Yelakov 77606
 
-from flask import Flask, request, render_template
-from werkzeug.utils import secure_filename
-from datetime import datetime
-import pygal
+app = Flask(__name__)
 
-ALLOWED_EXTENTIONS = set(['csv'])
+current_csv_path = 'example.csv'
+previous_titles = []
+previous_years = []
 
+@app.route('/')
+def index():
+    global current_csv_path, previous_titles, previous_years
+    error_message = None
 
-def allowed_file(filename):
-    return '.' in filename and \
-        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENTIONS
+    if current_csv_path:
+        try:
+            with open(current_csv_path, 'r') as csv_file:
+                reader = csv.DictReader(csv_file, delimiter=';')
+                if 'Director' not in reader.fieldnames:
+                    raise KeyError("Director column not found")
+                movies = parse_csv(current_csv_path, 'Lelouch, Claude')
+                previous_titles = [movie['Title'] for movie in movies]
+                previous_years = [movie['Year'] for movie in movies]
 
+                return render_template('index.html', titles=previous_titles, years=previous_years, error_message=error_message)
 
-def create_app():
-    app = Flask(__name__)
+        except FileNotFoundError:
+            error_message = "File not found. Please upload a valid CSV file."
+        except KeyError:
+            error_message = "Wrong file chosen. There any 'Director' columns"
+        except Exception as e:
+            error_message = f"Error: {str(e)}"
 
-    @app.route('/', methods=['GET', 'POST'])
-    def index():
-        if request.method == 'POST':
-            file = request.files['file']
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                new_filename = f'{filename.split(".")[0]}_{str(datetime.now().year)}.csv'
-                save_location = os.path.join('input', new_filename)
-                file.save(save_location)
+    return render_template('index.html', titles=previous_titles, years=previous_years, error_message=error_message)
 
-                lines = open('input/' + new_filename, 'r').readlines()
-                year_title = list()
-                for i in lines:
-                    x = i.strip().split(';')
-                    if (x[6] == 'Lelouch, Claude'):
-                        year_title.append(x[0] + ',' + x[2])
+@app.route('/upload', methods=['POST'])
+def upload():
+    global current_csv_path
+    if 'file' not in request.files:
+        return redirect(request.url)
+    
+    file = request.files['file']
 
-                if (len(year_title) == 0):
-                    return render_template('index.html') + '''
-                        <h2 style="color: brown">ERROR</h2> '''
-                    print(1)
-                else:
-                    chart = pygal.Pie(half_pie=True)
-                    pie_chart = pygal.Pie()
-                    pie_chart.title = 'Browser usage in February 2012 (in %)'
-                    for y in year_title:
-                        data = y.strip().split(',')
-                        pie_chart.add(data[1], int(data[0]))
+    if file.filename == '':
+        return redirect(request.url)
 
-                    # for y in year_title:
-                    #     data = y.strip().split(',')
-                    #     chart.add(data[1], int(data[0]))
+    if file:
+        if not os.path.exists('uploads'):
+            os.makedirs('uploads')
+        
+        file_path = os.path.join('uploads', file.filename)
+        file.save(file_path)
 
-                    chart = pie_chart.render_data_uri()
-                    return render_template('index.html', chart=chart)
+        current_csv_path = file_path
 
-        return render_template('index.html')
+        return redirect(url_for('index'))
 
-    return app
+def parse_csv(file_path, director_name):
+    with open(file_path, 'r') as csv_file:
+        reader = csv.DictReader(csv_file, delimiter=';')
+
+        movies = []
+        for row in reader:
+            if director_name in row['Director']:
+                movies.append({'Title': row['Title'], 'Year': row['Year']})
+        return movies
+
+if __name__ == '__main__':
+    app.run(debug=True)
