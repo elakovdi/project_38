@@ -1,191 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>CSV Viewer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movies where Lelouch Claude is a Director</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-    /* CSS стили */
-
-    body {
-        font-family: 'Verdana', sans-serif;
-        background-color: #f5f5f5;
-        margin: 0;
-        padding: 20px;
-        color: #333;
-    }
-
-    .container {
-        max-width: 800px;
-        margin: 0 auto;
-        background-color: #ffffff;
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-    }
-
-    h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 20px;
-        font-family: 'Verdana', sans-serif;
-    }
-
-    .upload-wrapper {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    .upload-btn {
-        background-color: #ff7f50;
-        color: #fff;
-        border: none;
-        padding: 10px 20px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        margin-top: 10px;
-        cursor: pointer;
-        transition: background-color 0.5s;
-        font-family: 'Verdana', sans-serif;
-    }
-
-    .upload-btn:hover {
-        background-color: #ff6347;
-    }
-
-    .success-message {
-        color: #32cd32;
-        font-weight: bold;
-        margin-bottom: 10px;
-        text-align: center;
-    }
-
-    .error-message {
-        color: #dc143c;
-        font-weight: bold;
-        margin-bottom: 10px;
-        text-align: center;
-    }
-
-    .data-table {
-        max-height: 300px;
-        overflow-y: auto;
-        width: 100%;
-        background-color: #ffffff;
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-        margin-top: 20px;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th,
-    td {
-        padding: 12px 15px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
-
-    thead th {
-        background-color: #f5f5f5;
-    }
-
-    tbody tr:nth-child(even) {
-        background-color: #f0f0f0;
-    }
-
-    tbody tr:hover {
-        background-color: #f9f9f9;
-    }
-
-    .chart-container {
-        margin-top: 40px;
-        text-align: center;
-    }
-
-    .chart-description {
-        color: #888;
-        margin-top: 10px;
-    }
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        form {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        label {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+        }
+        label:hover {
+            background-color: #45a049;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        canvas {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 80%; 
+            max-width: 1200px; 
+            margin: 200px auto;
+        }
     </style>
-
 </head>
 <body>
-    <div class="container">
-        <h1>CSV Viewer </h1>
-        <div class="upload-wrapper">
-            <form action="/" method="POST" enctype="multipart/form-data">
-                <input id="file-upload" type="file" name="file" accept=".csv" style="display: none;">
-                <label for="file-upload" class="upload-btn">Select CSV File</label>
-                <input type="submit" value="Upload" class="upload-btn">
-            </form>
-        </div>
-        {% if success_message %}
-        <p class="success-message">{{ success_message }}</p>
-        {% endif %}
-        {% if error_message %}
-        <p class="error-message">{{ error_message }}</p>
-        {% endif %}
-        <div class="data-table">
-            {% if data %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Year of Release</th>
-                        <th>Director</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in data %}
-                    <tr>
-                        <td>{{ row[2] }}</td>
-                        <td>{{ row[0] }}</td>
-                        <td>{{ row[5] }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p style="text-align: center;">No data available.</p>
-            {% endif %}
-        </div>
-        <div class="chart-container">
-            {% if data or example_chart_data %}
-            <h2>Movie Count by Year</h2>
-            <canvas id="chart" height="200"></canvas>
-            <p class="chart-description">This chart represents the count of movies by year.</p>
-            {% endif %}
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <h1>Lelouch Claude is a Director:</h1>
+
+    {% if error_message %}
+        <p style="color: red; text-align: center;">{{ error_message }}</p>
+    {% endif %}
+
+    <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+        <input type="file" name="file" accept=".csv" id="fileInput" onchange="displaySelectedFileName(this)">
+        <label for="fileInput">Choose a CSV file</label>
+        <button type="button" onclick="document.getElementById('uploadForm').submit()">Upload and Process</button>
+    </form>
+
+    <canvas id="moviesChart" width="400" height="200"></canvas>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var ctx = document.getElementById('chart').getContext('2d');
-            var chartData = {
-                labels: {% if data %}{{ chart_data.labels|tojson }}{% else %}{{ example_chart_data.labels|tojson }}{% endif %},
+        function displaySelectedFileName(input) {
+            var label = document.querySelector('label');
+            label.textContent = input.files[0].name;
+        }
+
+        var ctx = document.getElementById('moviesChart').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ titles | tojson | safe }},
                 datasets: [{
-                    label: 'Movies',
-                    data: {% if data %}{{ chart_data.data|tojson }}{% else %}{{ example_chart_data.data|tojson }}{% endif %},
-                    backgroundColor: 'rgba(255, 127, 80, 0.2)',
-                    borderColor: 'rgba(255, 127, 80, 1)',
-                    borderWidth: 1
+                    label: 'Год выпуска',
+                    data: {{ years | tojson | safe }},
+                    backgroundColor: 'rgba(112, 206, 214, 0.3   )',
+                    borderColor: 'rgba(255,101,80,0.39)',
+                    borderWidth: 2
                 }]
-            };
-            new Chart(ctx, {
-                type: 'bar',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            stepSize: 0.5
-                        }
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: {{ years | min | safe }} - 1
                     }
                 }
-            });
+            }
         });
     </script>
 </body>
